@@ -1,0 +1,31 @@
+# Laravel
+/vendor/
+/node_modules/
+/public/storage
+/storage/app/
+/storage/framework/
+/storage/logs/
+/bootstrap/cache/
+/.phpunit.result.cache
+/.env
+/.env.local
+/.env.production
+
+# Flutter
+/android/app/build/
+/android/app/gradle/
+/android/gradle/
+/build/
+/ios/Pods/
+/ios/Flutter/Flutter.framework
+/.dart_tool/
+/.packages
+/pubspec.lock
+/.flutter-plugins
+/.flutter-plugins-dependencies
+
+# General
+.DS_Store
+*.log
+*.tmp
+.vscode/settings.json
