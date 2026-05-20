@@ -35,10 +35,26 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   http: ^1.6.0
-  file_picker: ^11.0.2
+  file_picker: ^8.0.0
   camera: ^0.12.0+1
   path_provider: ^2.1.5
   path: ^1.9.1
+  live_activities: ^1.2.0
+  shared_preferences: ^2.5.3
+  image_picker: ^1.2.2
+  url_launcher: ^6.3.0
+  health: ^13.3.1
+  flutter_local_notifications: ^17.1.2
+  timezone: ^0.9.4
+  supabase_flutter: ^2.0.0
+  excel: ^4.0.6
+  google_generative_ai: ^0.4.0
+
+dependency_overrides:
+  app_group_directory:
+    path: packages/app_group_directory
+  flutter_native_image:
+    path: packages/flutter_native_image
 
 dev_dependencies:
   flutter_test:
@@ -50,12 +66,40 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/logo.png"
+    background_color: "#050505"
+    theme_color: "#050505"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: "assets/logo.png"
+  android: true
+  ios: true
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/Healty-T.svg
+    - assets/logo.png
+    - assets/logoH.jpg
+
+  config:
+    enable-lldb-debugging: false
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

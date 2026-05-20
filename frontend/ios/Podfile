@@ -1,5 +1,5 @@
-# 1. ESENCIAL: Quitamos el # para activar iOS 13.0
-platform :ios, '13.0'
+# 1. ESENCIAL: Quitamos el # para activar iOS 16.1
+platform :ios, '16.1'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 

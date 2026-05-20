@@ -16,6 +16,9 @@
 /android/app/gradle/
 /android/gradle/
 /build/
+/frontend/build/
+/frontend/android/build/
+/frontend/ios/build/
 /ios/Pods/
 /ios/Flutter/Flutter.framework
 /.dart_tool/
@@ -29,3 +32,6 @@
 *.log
 *.tmp
 .vscode/settings.json
+**/.firebase/
+**/supabase/.temp/
+**/.vscode/settings.json
