@@ -1,0 +1,20 @@
+{
+  "name": "docker-control-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dashboard profesional para administrar contenedores Docker y ejecutar operaciones de datos.",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dockerode": "^5.0.1",
+    "express": "^5.2.1",
+    "js-yaml": "^5.2.0"
+  }
+}

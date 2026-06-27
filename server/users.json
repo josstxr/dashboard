@@ -1,0 +1,81 @@
+{
+  "users": {
+    "admin": {
+      "password": "admin",
+      "permissions": {
+        "allowedCompose": [
+          "up",
+          "stop",
+          "restart",
+          "down",
+          "pull"
+        ],
+        "canQuery": true,
+        "canGetLogs": true,
+        "canSeeAllServices": true,
+        "canUsePermissionScripts": true,
+        "canManageUsers": true
+      }
+    },
+    "guest": {
+      "password": "guest",
+      "permissions": {
+        "allowedCompose": [],
+        "canQuery": true,
+        "isSelectOnly": true,
+        "canGetLogs": false,
+        "canSeeAllServices": true,
+        "canUsePermissionScripts": false,
+        "canManageUsers": false
+      }
+    }
+  },
+  "roles": {
+    "administrador": {
+      "allowedCompose": [
+        "up",
+        "stop",
+        "restart",
+        "down",
+        "pull"
+      ],
+      "canQuery": true,
+      "canGetLogs": true,
+      "canSeeAllServices": true,
+      "canUsePermissionScripts": true,
+      "canManageUsers": true
+    },
+    "gerente": {
+      "allowedCompose": [
+        "up",
+        "stop",
+        "restart",
+        "pull"
+      ],
+      "canQuery": true,
+      "canGetLogs": true,
+      "canSeeAllServices": true,
+      "canUsePermissionScripts": false,
+      "canManageUsers": false
+    },
+    "trabajador": {
+      "allowedCompose": [
+        "restart"
+      ],
+      "canQuery": false,
+      "canGetLogs": true,
+      "canSeeAllServices": false,
+      "canUsePermissionScripts": false,
+      "canManageUsers": false
+    },
+    "invitado": {
+      "allowedCompose": [],
+      "canQuery": true,
+      "isSelectOnly": true,
+      "canGetLogs": false,
+      "canSeeAllServices": true,
+      "canUsePermissionScripts": false,
+      "canManageUsers": false
+    }
+  }
+}
