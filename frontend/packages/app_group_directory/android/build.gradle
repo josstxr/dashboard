@@ -1,0 +1,31 @@
+group 'me.wolszon.app_group_directory'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.11.1'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'me.wolszon.app_group_directory'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 21
+    }
+}

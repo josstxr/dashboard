@@ -1,0 +1,21 @@
+name: app_group_directory
+description: Local compatibility patch for app group directory access.
+version: 2.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: me.wolszon.app_group_directory
+        pluginClass: AppGroupDirectoryPlugin
+      ios:
+        pluginClass: AppGroupDirectoryPlugin
