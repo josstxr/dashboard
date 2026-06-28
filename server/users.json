@@ -15,7 +15,8 @@
         "canSeeAllServices": true,
         "canUsePermissionScripts": true,
         "canManageUsers": true
-      }
+      },
+      "id": "admin"
     },
     "guest": {
       "password": "guest",
@@ -28,6 +29,31 @@
         "canUsePermissionScripts": false,
         "canManageUsers": false
       }
+    },
+    "josh": {
+      "password": "Maya2305",
+      "permissions": {
+        "canQuery": true,
+        "canGetLogs": true,
+        "canSeeAllServices": true,
+        "canUsePermissionScripts": true,
+        "canManageUsers": true,
+        "isSelectOnly": false,
+        "allowedCompose": [
+          "up",
+          "stop",
+          "restart",
+          "down",
+          "pull"
+        ]
+      },
+      "services": [
+        "mysql",
+        "sqlserver",
+        "postgresql",
+        "mongodb",
+        "cassandra"
+      ]
     }
   },
   "roles": {

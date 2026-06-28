@@ -56,8 +56,8 @@
 
     <main class="shell">
       <header class="topbar">
-        <div>
-          <h1>Dashboard de contenedores</h1>
+        <div class="topbar-copy">
+          <h1>Observatorio de infraestructura</h1>
           <p id="composePath">Conectando con Docker...</p>
         </div>
         <div class="top-actions">
@@ -85,6 +85,16 @@
           <span id="serviceCount">0</span>
           <small>Servicios</small>
         </div>
+      </section>
+
+      <section class="resource-panel" aria-label="Recursos del sistema">
+        <div class="resource-header">
+          <div>
+            <h2>Recursos del sistema</h2>
+            <p>Monitoriza el uso de CPU, memoria y disco de los contenedores.</p>
+          </div>
+        </div>
+        <div class="resource-grid" id="resourceSummary"></div>
       </section>
 
       <section class="view active" id="servicesView" role="tabpanel" aria-labelledby="nav-services">

@@ -2,6 +2,7 @@ import http from "node:http";
 import { execFile, spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import * as yaml from "js-yaml";
 
@@ -211,6 +212,80 @@ function normalizePs(stdout) {
     .filter(Boolean);
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
+}
+
+async function getHostResources() {
+  const totalMemory = os.totalmem();
+  const freeMemory = os.freemem();
+  const usedMemory = totalMemory - freeMemory;
+  const diskResult = await run("df", ["-Pk", "/"], { timeout: 15000 });
+
+  let disk = { total: 0, used: 0, free: 0, percent: 0 };
+  if (diskResult.ok) {
+    const lines = diskResult.stdout.split("\n").filter(Boolean);
+    if (lines.length > 1) {
+      const parts = lines[1].trim().split(/\s+/);
+      const [, size, used, avail, percent] = parts;
+      disk = {
+        total: Number(size) * 1024,
+        used: Number(used) * 1024,
+        free: Number(avail) * 1024,
+        percent: Number(percent.replace("%", "")) || 0
+      };
+    }
+  }
+
+  return {
+    platform: os.platform(),
+    arch: os.arch(),
+    cpuCount: os.cpus().length,
+    memory: {
+      total: totalMemory,
+      used: usedMemory,
+      free: freeMemory,
+      percent: Math.round((usedMemory / totalMemory) * 100)
+    },
+    disk
+  };
+}
+
+async function getContainerResources(containers) {
+  if (!containers?.length) return [];
+  const result = await run("docker", ["stats", "--no-stream", "--format", "{{json .}}", ...containers], { timeout: 30000 });
+  if (!result.ok) return [];
+
+  return result.stdout
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        const item = JSON.parse(line);
+        return {
+          name: String(item.Name || "").replace(/^\/+/, ""),
+          cpuPercent: item.CPUPerc || null,
+          memoryUsage: item.MemUsage || null,
+          memoryPercent: item.MemPerc || null,
+          networkIO: item.NetIO || null,
+          blockIO: item.BlockIO || null,
+          pids: item.PIDs || null
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
 async function listServices() {
   // 1. Lee el archivo compose para obtener la lista de todos los servicios definidos
   let composeConfig;
@@ -313,6 +388,21 @@ async function handleApiRequest(req, res, pathname, user, permissions) {
     // Todos los usuarios ven todos los servicios. Los permisos se aplican por acción.
     const services = await listServices();
     return sendJson(res, 200, { services });
+  }
+
+  if (req.method === "GET" && pathname === "/api/resources") {
+    const services = await listServices();
+    const containers = services.map((service) => service.container).filter(Boolean);
+    const resources = await getContainerResources(containers);
+    const resourcesByContainer = Object.fromEntries(resources.map((item) => [item.name, item]));
+
+    return sendJson(res, 200, {
+      host: await getHostResources(),
+      services: services.map((service) => ({
+        ...service,
+        resources: resourcesByContainer[service.container] || null
+      }))
+    });
   }
 
   if (req.method === "POST" && pathname === "/api/compose") {

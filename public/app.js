@@ -1,5 +1,6 @@
 const state = {
   services: [],
+  resources: { host: {}, services: [] },
   selectedService: "postgresql",
   user: null,
   allUsers: {},
@@ -25,9 +26,11 @@ const els = {
   toast: $("#toast"),
   lastCommand: $("#lastCommand"),
   themeToggle: $("#themeToggle"),
+  resourceSummary: $("#resourceSummary"),
   userListContainer: $("#userListContainer"),
   createUserForm: $("#createUserForm"),
   newUserId: $("#newUserId"),
+  newUserPassword: $("#newUserPassword"),
   newUserRole: $("#newUserRole"),
   userServiceGrid: $("#userServiceGrid"),
   loginOverlay: $("#loginOverlay"),
@@ -43,6 +46,28 @@ const els = {
   cancelEditBtn: $("#cancelEditBtn"),
   followLogsBtn: $("#followLogsBtn")
 };
+
+function updateThemeButton(theme = document.documentElement.getAttribute("data-theme") || "light") {
+  if (!els.themeToggle) return;
+  const isDark = theme === "dark";
+  els.themeToggle.setAttribute("aria-label", isDark ? "Cambiar a tema claro" : "Cambiar a tema oscuro");
+  els.themeToggle.title = isDark ? "Cambiar a tema claro" : "Cambiar a tema oscuro";
+}
+
+function applyInitialTheme() {
+  const savedTheme = localStorage.getItem("theme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const theme = savedTheme || (prefersDark ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", theme);
+  updateThemeButton(theme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", currentTheme);
+  localStorage.setItem("theme", currentTheme);
+  updateThemeButton(currentTheme);
+}
 
 function toast(message) {
   els.toast.textContent = message;
@@ -91,6 +116,40 @@ function portText(ports) {
     const target = port.TargetPort || port.Target || "";
     return published && target ? `${published}:${target}` : JSON.stringify(port);
   }).join(", ");
+}
+
+function renderResources() {
+  const host = state.resources.host || {};
+  const memory = host.memory || {};
+  const disk = host.disk || {};
+
+  const cards = (state.resources.services || []).map((service) => {
+    const resource = service.resources || {};
+    return /*html*/`
+      <article class="resource-card">
+        <div class="resource-title">${service.label}</div>
+        <div class="resource-meta">${service.container}</div>
+        <div class="resource-stats">
+          <span><strong>${resource.cpuPercent || "—"}</strong><small>CPU</small></span>
+          <span><strong>${resource.memoryPercent || "—"}</strong><small>RAM</small></span>
+          <span><strong>${resource.memoryUsage || "—"}</strong><small>Memoria</small></span>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  els.resourceSummary.innerHTML = /*html*/`
+    <article class="resource-card resource-card--host">
+      <div class="resource-title">Sistema</div>
+      <div class="resource-meta">${host.platform || "Host"} · ${host.cpuCount || 0} CPU</div>
+      <div class="resource-stats">
+        <span><strong>${memory.percent || 0}%</strong><small>RAM usada</small></span>
+        <span><strong>${Math.round((memory.used || 0) / 1024 / 1024 / 1024)} GB</strong><small>RAM usada</small></span>
+        <span><strong>${Math.round((disk.used || 0) / 1024 / 1024 / 1024)} GB</strong><small>Disco usado</small></span>
+      </div>
+    </article>
+    ${cards || '<article class="resource-card"><div class="resource-title">Sin datos</div><div class="resource-meta">No se pudieron obtener métricas de Docker.</div></article>'}
+  `;
 }
 
 function render() {
@@ -176,9 +235,12 @@ async function refresh() {
   els.composePath.textContent = `${health.ok ? "Docker conectado" : "Docker no disponible"} · ${health.composeFile}`;
   const data = await request("/api/services");
   state.services = data.services;
+  const resources = await request("/api/resources").catch(() => ({ host: {}, services: [] }));
+  state.resources = resources;
   if (!state.services.some((service) => service.id === state.selectedService)) {
     state.selectedService = state.services[0]?.id || "postgresql";
   }
+  renderResources();
   render();
   if (!els.scriptBox.value.trim()) fillInsertTemplate();
 }
@@ -453,6 +515,7 @@ $("#refreshBtn").addEventListener("click", () => refresh().catch((error) => toas
 $("#startAllBtn").addEventListener("click", () => compose("up").catch((error) => toast(error.message)));
 $("#stopAllBtn").addEventListener("click", () => compose("stop").catch((error) => toast(error.message)));
 $("#restartAllBtn").addEventListener("click", () => compose("restart").catch((error) => toast(error.message)));
+els.themeToggle.addEventListener("click", toggleTheme);
 $("#insertTemplateBtn").addEventListener("click", fillInsertTemplate);
 $("#permissionTemplateBtn").addEventListener("click", fillPermissionTemplate);
 $("#runScriptBtn").addEventListener("click", () => runScript().catch((error) => {
@@ -493,12 +556,12 @@ els.createUserForm.addEventListener("submit", async (event) => {
   }
 
   const body = { permissions, services };
-  if (password) {
-    body.password = password;
-  }
 
   try {
     if (state.editModeUser) {
+      if (password) {
+        body.password = password;
+      }
       await request(`/api/users/${encodeURIComponent(state.editModeUser)}`, { method: "PUT", body });
       toast(`Usuario '${state.editModeUser}' actualizado.`);
     } else {
