@@ -88,56 +88,93 @@ async function saveUsersDb() {
   await writeFile(USERS_DB_FILE, JSON.stringify(USERS_DB, null, 2), "utf-8");
 }
 
-const serviceCatalog = {
+const dbEngineCatalog = {
   mysql: {
+    engine: "mysql",
     label: "MySQL",
-    container: "db_mysql_container",
     client: "mysql",
     defaultScript:
-      "CREATE DATABASE IF NOT EXISTS escuela;\nUSE escuela;\nCREATE TABLE IF NOT EXISTS alumnos (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(80), carrera VARCHAR(80));\nINSERT INTO alumnos (nombre, carrera) VALUES ('Ana Torres', 'Sistemas');\nSELECT * FROM alumnos;"
+      "CREATE DATABASE IF NOT EXISTS escuela;\nUSE escuela;\nCREATE TABLE IF NOT EXISTS alumnos (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(80), carrera VARCHAR(80));\nINSERT INTO alumnos (nombre, carrera) VALUES ('Ana Torres', 'Sistemas');\nSELECT * FROM alumnos;",
+    permissionTemplate:
+      "CREATE USER IF NOT EXISTS 'lector'@'%' IDENTIFIED BY 'lector123';\nGRANT SELECT ON escuela.* TO 'lector'@'%';\nFLUSH PRIVILEGES;"
   },
   postgresql: {
+    engine: "postgresql",
     label: "PostgreSQL",
-    container: "postgresql_container",
     client: "psql",
     defaultScript:
-      "CREATE TABLE IF NOT EXISTS alumnos (id SERIAL PRIMARY KEY, nombre TEXT, carrera TEXT);\nINSERT INTO alumnos (nombre, carrera) VALUES ('Ana Torres', 'Sistemas');\nSELECT * FROM alumnos;"
+      "CREATE TABLE IF NOT EXISTS alumnos (id SERIAL PRIMARY KEY, nombre TEXT, carrera TEXT);\nINSERT INTO alumnos (nombre, carrera) VALUES ('Ana Torres', 'Sistemas');\nSELECT * FROM alumnos;",
+    permissionTemplate:
+      "DO $$ BEGIN CREATE ROLE lector LOGIN PASSWORD 'lector123'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;\nGRANT CONNECT ON DATABASE dbejemplo TO lector;\nGRANT USAGE ON SCHEMA public TO lector;\nGRANT SELECT ON ALL TABLES IN SCHEMA public TO lector;"
   },
   mongodb: {
+    engine: "mongodb",
     label: "MongoDB",
-    container: "mongodb_container",
     client: "mongo",
     defaultScript:
-      "db = db.getSiblingDB('escuela');\ndb.alumnos.insertOne({ nombre: 'Ana Torres', carrera: 'Sistemas', creado: new Date() });\ndb.alumnos.find().pretty();"
+      "db = db.getSiblingDB('escuela');\ndb.alumnos.insertOne({ nombre: 'Ana Torres', carrera: 'Sistemas', creado: new Date() });\ndb.alumnos.find().pretty();",
+    permissionTemplate:
+      "db = db.getSiblingDB('escuela');\ndb.createUser({ user: 'lector', pwd: 'lector123', roles: [{ role: 'read', db: 'escuela' }] });"
   },
   cassandra: {
+    engine: "cassandra",
     label: "Cassandra",
-    container: "cassandra_container",
     client: "cqlsh",
     defaultScript:
-      "CREATE KEYSPACE IF NOT EXISTS escuela WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};\nCREATE TABLE IF NOT EXISTS escuela.alumnos (id uuid PRIMARY KEY, nombre text, carrera text);\nINSERT INTO escuela.alumnos (id, nombre, carrera) VALUES (uuid(), 'Ana Torres', 'Sistemas');\nSELECT * FROM escuela.alumnos;"
+      "CREATE KEYSPACE IF NOT EXISTS escuela WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};\nCREATE TABLE IF NOT EXISTS escuela.alumnos (id uuid PRIMARY KEY, nombre text, carrera text);\nINSERT INTO escuela.alumnos (id, nombre, carrera) VALUES (uuid(), 'Ana Torres', 'Sistemas');\nSELECT * FROM escuela.alumnos;",
+    permissionTemplate:
+      "CREATE ROLE IF NOT EXISTS lector WITH PASSWORD = 'lector123' AND LOGIN = true;\nGRANT SELECT ON KEYSPACE escuela TO lector;"
   },
   sqlserver: {
+    engine: "sqlserver",
     label: "SQL Server",
-    container: "sqlserver_container",
     client: "sqlcmd",
     defaultScript:
-      "IF DB_ID('escuela') IS NULL CREATE DATABASE escuela;\nGO\nUSE escuela;\nGO\nIF OBJECT_ID('dbo.alumnos', 'U') IS NULL CREATE TABLE dbo.alumnos (id INT IDENTITY(1,1) PRIMARY KEY, nombre NVARCHAR(80), carrera NVARCHAR(80));\nINSERT INTO dbo.alumnos (nombre, carrera) VALUES (N'Ana Torres', N'Sistemas');\nSELECT * FROM dbo.alumnos;\nGO"
+      "IF DB_ID('escuela') IS NULL CREATE DATABASE escuela;\nGO\nUSE escuela;\nGO\nIF OBJECT_ID('dbo.alumnos', 'U') IS NULL CREATE TABLE dbo.alumnos (id INT IDENTITY(1,1) PRIMARY KEY, nombre NVARCHAR(80), carrera NVARCHAR(80));\nINSERT INTO dbo.alumnos (nombre, carrera) VALUES (N'Ana Torres', N'Sistemas');\nSELECT * FROM dbo.alumnos;\nGO",
+    permissionTemplate:
+      "USE escuela;\nGO\nIF NOT EXISTS (SELECT * FROM sys.sql_logins WHERE name = 'lector') CREATE LOGIN lector WITH PASSWORD = 'Lector123!';\nIF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'lector') CREATE USER lector FOR LOGIN lector;\nALTER ROLE db_datareader ADD MEMBER lector;\nGO"
   }
 };
 
-const permissionTemplates = {
-  mysql:
-    "CREATE USER IF NOT EXISTS 'lector'@'%' IDENTIFIED BY 'lector123';\nGRANT SELECT ON escuela.* TO 'lector'@'%';\nFLUSH PRIVILEGES;",
-  postgresql:
-    "DO $$ BEGIN CREATE ROLE lector LOGIN PASSWORD 'lector123'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;\nGRANT CONNECT ON DATABASE dbejemplo TO lector;\nGRANT USAGE ON SCHEMA public TO lector;\nGRANT SELECT ON ALL TABLES IN SCHEMA public TO lector;",
-  mongodb:
-    "db = db.getSiblingDB('escuela');\ndb.createUser({ user: 'lector', pwd: 'lector123', roles: [{ role: 'read', db: 'escuela' }] });",
-  cassandra:
-    "CREATE ROLE IF NOT EXISTS lector WITH PASSWORD = 'lector123' AND LOGIN = true;\nGRANT SELECT ON KEYSPACE escuela TO lector;",
-  sqlserver:
-    "USE escuela;\nGO\nIF NOT EXISTS (SELECT * FROM sys.sql_logins WHERE name = 'lector') CREATE LOGIN lector WITH PASSWORD = 'Lector123!';\nIF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'lector') CREATE USER lector FOR LOGIN lector;\nALTER ROLE db_datareader ADD MEMBER lector;\nGO"
-};
+const dbEngineImageMatchers = [
+  { pattern: /mysql|mariadb/i, engine: "mysql" },
+  { pattern: /postgres|postgresql/i, engine: "postgresql" },
+  { pattern: /mongo/i, engine: "mongodb" },
+  { pattern: /cassandra/i, engine: "cassandra" },
+  { pattern: /mssql|sqlserver|microsoft\/mssql/i, engine: "sqlserver" }
+];
+
+function getEnvValue(environment, name) {
+  if (!environment) return undefined;
+  if (Array.isArray(environment)) {
+    const item = environment.find((entry) => String(entry).startsWith(`${name}=`));
+    return item?.split("=", 2)[1];
+  }
+  if (typeof environment === "object") {
+    return environment[name] ?? environment[name.toUpperCase()] ?? environment[name.toLowerCase()];
+  }
+  return undefined;
+}
+
+function inferDbEngineFromImage(image) {
+  const normalized = String(image || "").trim().toLowerCase();
+  if (!normalized) return null;
+  const match = dbEngineImageMatchers.find((item) => item.pattern.test(normalized));
+  return match?.engine || null;
+}
+
+function getServiceMeta(service, serviceConfig = null, row = null) {
+  if (Object.prototype.hasOwnProperty.call(dbEngineCatalog, service)) {
+    return dbEngineCatalog[service];
+  }
+
+  const image = row?.Image || serviceConfig?.image || "";
+  const engine = inferDbEngineFromImage(image);
+  if (!engine) {
+    return null;
+  }
+  return dbEngineCatalog[engine];
+}
 
 function run(command, args, options = {}) {
   return new Promise((resolve) => {
@@ -188,13 +225,6 @@ async function validateService(service) {
   if (!allServiceNames.includes(service)) {
     throw new Error(`Servicio no encontrado en ${COMPOSE_FILE}: ${service}`);
   }
-}
-
-function getServiceMeta(service) {
-  if (!Object.prototype.hasOwnProperty.call(serviceCatalog, service)) {
-    throw new Error(`El servicio '${service}' no está configurado para operaciones de base de datos.`);
-  }
-  return serviceCatalog[service];
 }
 
 function normalizePs(stdout) {
@@ -309,65 +339,50 @@ async function listServices() {
   // 3. Itera sobre los servicios del archivo compose y los enriquece con datos en vivo
   return allServiceNames.map((id) => {
     const serviceConfig = composeConfig.services[id];
-    const staticMeta = serviceCatalog[id] || {}; // Obtiene metadatos extra del catálogo si está disponible
-
     const row = rows.find((item) => item.Service === id);
+    const meta = getServiceMeta(id, serviceConfig, row) || {};
 
     const containerName = row?.Name || serviceConfig.container_name || `${path.basename(COMPOSE_DIR)}_${id}_1`;
 
     return {
       id,
-      label: staticMeta.label || serviceConfig.container_name || id,
+      label: meta.label || serviceConfig.container_name || id,
       container: containerName,
-      client: staticMeta.client || null,
+      engine: meta.engine || null,
+      client: meta.client || null,
       state: row?.State || "exited",
       status: row?.Status || "Detenido",
       image: row?.Image || serviceConfig.image || "",
       // La salida de `ps` para los puertos es mejor porque muestra el puerto del host
       ports: row?.Publishers || serviceConfig.ports || [],
-      defaultScript: staticMeta.defaultScript || `echo "Servicio '${id}' no configurado para ejecución de scripts."`,
-      permissionTemplate: permissionTemplates[id] || null
+      defaultScript: meta.defaultScript || `echo "Servicio '${id}' no configurado para ejecución de scripts."`,
+      permissionTemplate: meta.permissionTemplate || null
     };
   });
 }
 
 function dbExecArgs(service, script) {
   const meta = getServiceMeta(service);
-  if (service === "mysql") {
-    return ["exec", "-i", meta.container, "mysql", "-uroot", "-proot", "-e", script];
+  if (!meta) {
+    throw new Error(`No se pudo determinar el motor de base de datos para el servicio '${service}'.`);
   }
-  if (service === "postgresql") {
-    return ["exec", "-i", meta.container, "psql", "-U", "USUARIOPRINCIPAL", "-d", "dbejemplo", "-v", "ON_ERROR_STOP=1", "-c", script];
+
+  if (meta.engine === "mysql") {
+    return ["exec", "-T", service, "mysql", "-uroot", "-proot", "-e", script];
   }
-  if (service === "mongodb") {
-    return ["exec", "-i", meta.container, "mongo", "-u", "USUARIOPRINCIPAL", "-p", "root", "--authenticationDatabase", "admin", "--eval", script];
+  if (meta.engine === "postgresql") {
+    return ["exec", "-T", service, "psql", "-U", "USUARIOPRINCIPAL", "-d", "dbejemplo", "-v", "ON_ERROR_STOP=1", "-c", script];
   }
-  if (service === "cassandra") {
-    return ["exec", "-i", meta.container, "cqlsh", "-e", script];
+  if (meta.engine === "mongodb") {
+    return ["exec", "-T", service, "mongo", "-u", "USUARIOPRINCIPAL", "-p", "root", "--authenticationDatabase", "admin", "--eval", script];
   }
-  if (service === "sqlserver") {
-    return ["exec", "-i", meta.container, "sh", "-lc", `if [ -x /opt/mssql-tools18/bin/sqlcmd ]; then /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Password123!' -C -Q "$SQL_SCRIPT"; else /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Password123!' -Q "$SQL_SCRIPT"; fi`];
+  if (meta.engine === "cassandra") {
+    return ["exec", "-T", service, "cqlsh", "-e", script];
+  }
+  if (meta.engine === "sqlserver") {
+    return ["exec", "-T", service, "sh", "-lc", `if [ -x /opt/mssql-tools18/bin/sqlcmd ]; then /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Password123!' -C -Q \"$SQL_SCRIPT\"; else /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Password123!' -Q \"$SQL_SCRIPT\"; fi`];
   }
   throw new Error(`Servicio no soportado: ${service}`);
-}
-
-async function executeSqlServer(script) {
-  const meta = getServiceMeta("sqlserver");
-  return new Promise((resolve) => {
-    execFile("docker", ["exec", "-i", "-e", `SQL_SCRIPT=${script}`, meta.container, "sh", "-lc", "if [ -x /opt/mssql-tools18/bin/sqlcmd ]; then /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Password123!' -C -Q \"$SQL_SCRIPT\"; else /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Password123!' -Q \"$SQL_SCRIPT\"; fi"], {
-      cwd: COMPOSE_DIR,
-      timeout: 120000,
-      maxBuffer: 1024 * 1024 * 8
-    }, (error, stdout, stderr) => {
-      resolve({
-        ok: !error,
-        code: error?.code ?? 0,
-        stdout: stdout?.trim() || "",
-        stderr: stderr?.trim() || "",
-        command: "docker exec sqlserver_container sqlcmd"
-      });
-    });
-  });
 }
 
 async function handleApiRequest(req, res, pathname, user, permissions) {
@@ -388,6 +403,51 @@ async function handleApiRequest(req, res, pathname, user, permissions) {
     // Todos los usuarios ven todos los servicios. Los permisos se aplican por acción.
     const services = await listServices();
     return sendJson(res, 200, { services });
+  }
+
+  if (req.method === "POST" && pathname === "/api/services/add") {
+    if (!permissions.allowedCompose.includes("up")) {
+      throw new Error("No tienes permiso para crear contenedores.");
+    }
+    const body = await readJson(req);
+    const { id, image, container_name, ports, environment, command, restart } = body;
+    if (!id || !image) {
+      throw new Error("El nombre del servicio y la imagen son requeridos.");
+    }
+    const composeFileContent = await readFile(COMPOSE_FILE, "utf-8");
+    const composeConfig = yaml.load(composeFileContent) || {};
+    composeConfig.services = composeConfig.services || {};
+
+    if (Object.prototype.hasOwnProperty.call(composeConfig.services, id)) {
+      throw new Error(`El servicio '${id}' ya existe en el archivo Compose.`);
+    }
+
+    const serviceDefinition = { image };
+    if (container_name) serviceDefinition.container_name = container_name;
+    if (ports) {
+      serviceDefinition.ports = Array.isArray(ports) ? ports : String(ports).split("\n").map((line) => line.trim()).filter(Boolean);
+    }
+    if (environment) {
+      const envLines = Array.isArray(environment) ? environment : String(environment).split("\n");
+      const envObject = {};
+      envLines.forEach((line) => {
+        const trimmed = String(line).trim();
+        if (!trimmed) return;
+        const [key, ...rest] = trimmed.split("=");
+        envObject[key.trim()] = rest.join("=").trim();
+      });
+      serviceDefinition.environment = envObject;
+    }
+    if (command) serviceDefinition.command = command;
+    if (restart) serviceDefinition.restart = restart;
+
+    composeConfig.services[id] = serviceDefinition;
+    const newYaml = yaml.dump(composeConfig, { noRefs: true, sortKeys: false });
+    await writeFile(COMPOSE_FILE, newYaml, "utf-8");
+
+    const upResult = await dockerCompose(["up", "-d", id], { timeout: 240000 });
+    const services = await listServices();
+    return sendJson(res, upResult.ok ? 201 : 500, { result: upResult, services });
   }
 
   if (req.method === "GET" && pathname === "/api/resources") {

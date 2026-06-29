@@ -44,7 +44,18 @@ const els = {
   userFormTitle: $("#userFormTitle"),
   userFormSubmitBtn: $("#userFormSubmitBtn"),
   cancelEditBtn: $("#cancelEditBtn"),
-  followLogsBtn: $("#followLogsBtn")
+  followLogsBtn: $("#followLogsBtn"),
+  addContainerBtn: $("#addContainerBtn"),
+  addContainerPanel: $("#addContainerPanel"),
+  addContainerForm: $("#addContainerForm"),
+  cancelAddContainerBtn: $("#cancelAddContainerBtn"),
+  newServiceId: $("#newServiceId"),
+  newServiceImage: $("#newServiceImage"),
+  newServiceContainer: $("#newServiceContainer"),
+  newServicePorts: $("#newServicePorts"),
+  newServiceEnv: $("#newServiceEnv"),
+  newServiceCommand: $("#newServiceCommand"),
+  newServiceRestart: $("#newServiceRestart")
 };
 
 function updateThemeButton(theme = document.documentElement.getAttribute("data-theme") || "light") {
@@ -168,6 +179,7 @@ function render() {
     $("#nav-admin").style.display = permissions.canManageUsers ? "" : "none";
     $("#nav-logs").style.display = permissions.canGetLogs ? "" : "none";
     $("#permissionTemplateBtn").style.display = permissions.canUsePermissionScripts ? "" : "none";
+    els.addContainerBtn.style.display = allowedGlobal.includes("up") ? "" : "none";
   }
 
   els.serviceGrid.innerHTML = state.services.map((service) => {
@@ -243,6 +255,9 @@ async function refresh() {
   renderResources();
   render();
   if (!els.scriptBox.value.trim()) fillInsertTemplate();
+  if (els.addContainerPanel) {
+    els.addContainerPanel.style.display = "none";
+  }
 }
 
 async function compose(action, service) {
@@ -586,6 +601,49 @@ els.logoutBtn.addEventListener("click", () => {
   localStorage.removeItem("userId");
   window.location.reload();
 });
+
+function toggleAddContainerPanel(show) {
+  if (!els.addContainerPanel) return;
+  els.addContainerPanel.style.display = show ? "block" : "none";
+}
+
+if (els.addContainerBtn) {
+  els.addContainerBtn.addEventListener("click", () => {
+    toggleAddContainerPanel(true);
+  });
+}
+
+if (els.cancelAddContainerBtn) {
+  els.cancelAddContainerBtn.addEventListener("click", () => {
+    toggleAddContainerPanel(false);
+  });
+}
+
+if (els.addContainerForm) {
+  els.addContainerForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const payload = {
+      id: els.newServiceId.value.trim(),
+      image: els.newServiceImage.value.trim(),
+      container_name: els.newServiceContainer.value.trim() || undefined,
+      ports: els.newServicePorts.value.trim(),
+      environment: els.newServiceEnv.value.trim(),
+      command: els.newServiceCommand.value.trim() || undefined,
+      restart: els.newServiceRestart.value.trim() || undefined
+    };
+
+    try {
+      const data = await request("/api/services/add", { method: "POST", body: payload });
+      state.services = data.services;
+      render();
+      toggleAddContainerPanel(false);
+      els.addContainerForm.reset();
+      toast("Contenedor agregado y levantado correctamente.");
+    } catch (error) {
+      toast(error.message);
+    }
+  });
+}
 
 function cancelEditMode() {
   state.editModeUser = null;

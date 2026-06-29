@@ -109,9 +109,43 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               Reiniciar todos
             </button>
+            <button class="primary" id="addContainerBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              Agregar contenedor
+            </button>
           </div>
         </div>
         <div class="service-grid" id="serviceGrid"></div>
+        <div class="panel" id="addContainerPanel" style="display:none; margin-top:1rem;">
+          <h3>Nuevo contenedor</h3>
+          <form id="addContainerForm">
+            <label for="newServiceId">Nombre del servicio</label>
+            <input type="text" id="newServiceId" required placeholder="por-ejemplo db_mysql" />
+
+            <label for="newServiceImage">Imagen</label>
+            <input type="text" id="newServiceImage" required placeholder="por-ejemplo mysql:8.0" />
+
+            <label for="newServiceContainer">Nombre del contenedor (opcional)</label>
+            <input type="text" id="newServiceContainer" placeholder="por-ejemplo proyecto_db_mysql_1" />
+
+            <label for="newServicePorts">Puertos (uno por línea)</label>
+            <textarea id="newServicePorts" placeholder="3306:3306\n8080:80"></textarea>
+
+            <label for="newServiceEnv">Variables de entorno (uno por línea)</label>
+            <textarea id="newServiceEnv" placeholder="MYSQL_ROOT_PASSWORD=root\nPOSTGRES_PASSWORD=secret"></textarea>
+
+            <label for="newServiceCommand">Comando (opcional)</label>
+            <input type="text" id="newServiceCommand" placeholder="comando opcional" />
+
+            <label for="newServiceRestart">Reinicio automático</label>
+            <input type="text" id="newServiceRestart" placeholder="por-ejemplo unless-stopped" />
+
+            <div class="form-actions">
+              <button type="button" class="ghost" id="cancelAddContainerBtn">Cancelar</button>
+              <button type="submit" class="primary">Crear contenedor</button>
+            </div>
+          </form>
+        </div>
       </section>
 
       <section class="view" id="dataView" role="tabpanel" aria-labelledby="nav-data" hidden>
